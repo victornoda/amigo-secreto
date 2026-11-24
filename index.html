@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Amigo Secreto</title>
+<meta property="og:title" content="Amigo Secreto 🎁">
+<meta property="og:description" content="Toque para ver quem você tirou.">
+<style>
+  :root {
+    --fundo: #f6f1e9;
+    --cartao: #ffffff;
+    --texto: #2b2420;
+    --suave: #7a6e66;
+    --destaque: #b3261e;
+    --borda: #e6ddd2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fundo: #1a1614;
+      --cartao: #262120;
+      --texto: #f3ece4;
+      --suave: #b3a79d;
+      --destaque: #ff8a7a;
+      --borda: #3a322e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: var(--fundo);
+    color: var(--texto);
+    font: 17px/1.5 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+  main {
+    width: 100%;
+    max-width: 420px;
+    padding: 40px 24px;
+    text-align: center;
+    background: var(--cartao);
+    border: 1px solid var(--borda);
+    border-radius: 20px;
+  }
+  .presente { font-size: 56px; line-height: 1; margin-bottom: 16px; }
+  h1 { font-size: 26px; margin: 0 0 8px; }
+  p { margin: 0; color: var(--suave); }
+  button {
+    margin-top: 28px;
+    width: 100%;
+    padding: 16px;
+    font: inherit;
+    font-weight: 600;
+    color: #fff;
+    background: var(--destaque);
+    border: 0;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  @media (prefers-color-scheme: dark) { button { color: #1a1614; } }
+  button:focus-visible { outline: 3px solid var(--texto); outline-offset: 3px; }
+  #resultado { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--borda); }
+  .nome { margin: 4px 0; font-size: 36px; font-weight: 700; color: var(--destaque); overflow-wrap: anywhere; }
+  .tamanho { color: var(--texto); }
+</style>
+</head>
+<body>
+<main>
+  <div class="presente" aria-hidden="true">🎁</div>
+  <h1 id="ola">Amigo Secreto</h1>
+  <p id="aviso">Só você deve ver este resultado.</p>
+  <button id="revelar" type="button">Revelar meu amigo secreto</button>
+  <section id="resultado" hidden aria-live="polite">
+    <p>Você tirou</p>
+    <p class="nome" id="nome"></p>
+    <p class="tamanho" id="tamanho"></p>
+  </section>
+</main>
+<script>
+  // O resultado vem embaralhado depois do "#" do link, que o navegador não envia ao servidor.
+  function ler() {
+    try {
+      const token = location.hash.slice(1).replace(/-/g, "+").replace(/_/g, "/");
+      const bytes = Uint8Array.from(atob(token), (c) => c.charCodeAt(0));
+      const metade = bytes.length / 2;
+      if (!metade || !Number.isInteger(metade)) return null;
+      const dados = bytes.slice(metade).map((b, i) => b ^ bytes[i]);
+      const texto = new TextDecoder("utf-8", { fatal: true }).decode(dados).replace(/\0+$/, "");
+      const [pessoa, amigo] = texto.split("\n");
+      return pessoa && amigo ? { pessoa, amigo } : null;
+    } catch {
+      return null;
+    }
+  }
+
+  const sorteio = ler();
+  const $ = (id) => document.getElementById(id);
+
+  if (!sorteio) {
+    $("ola").textContent = "Link inválido";
+    $("aviso").textContent = "Peça ao organizador para reenviar o seu link.";
+    $("revelar").hidden = true;
+  } else {
+    $("ola").textContent = `Olá, ${sorteio.pessoa.split(" - ")[0]}!`;
+    $("revelar").addEventListener("click", () => {
+      const [nome, ...tamanho] = sorteio.amigo.split(" - ");
+      $("nome").textContent = nome;
+      $("tamanho").textContent = tamanho.length ? `Tamanho: ${tamanho.join(" - ")}` : "";
+      $("revelar").hidden = true;
+      $("resultado").hidden = false;
+    });
+  }
+</script>
+</body>
+</html>
